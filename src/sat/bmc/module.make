@@ -13,6 +13,7 @@ SRC +=    src/sat/bmc/bmcBCore.c \
     src/sat/bmc/bmcCexMin2.c \
     src/sat/bmc/bmcCexTools.c \
     src/sat/bmc/bmcCas.c \
+    src/sat/bmc/bmcCasDec2.c \
     src/sat/bmc/bmcChain.c \
     src/sat/bmc/bmcClp.c \
     src/sat/bmc/bmcEco.c \
@@ -25,6 +26,7 @@ SRC +=    src/sat/bmc/bmcBCore.c \
     src/sat/bmc/bmcLoad.c \
     src/sat/bmc/bmcMaj.c \
     src/sat/bmc/bmcMaj2.c \
+    src/sat/bmc/bmcTwo.c \
     src/sat/bmc/bmcMaj3.c \
     src/sat/bmc/bmcMaj7.c \
     src/sat/bmc/bmcMaj8.c \

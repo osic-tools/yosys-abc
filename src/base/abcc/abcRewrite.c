@@ -24,6 +24,7 @@
 #include "bool/kit/kit.h"
 #include "opt/cut/cut.h"
 #include <errno.h>
+#include <limits.h>
 
 ABC_NAMESPACE_IMPL_START
 
@@ -68,8 +69,10 @@ static int Abc_CommandAbc9Drf                ( Abc_Frame_t * pAbc, int argc, cha
 static int Abc_CommandAbc9LNetOpt            ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandAbc9Ttopt              ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandAbc9Transduction       ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int Abc_CommandAbc9TranStoch2         ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandAbc9TranStoch          ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandAbc9Rrr                ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int Abc_CommandAbc9Rrr2               ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandAbc9Rewire             ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandAbc9DeepSyn            ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandAbc9RandSyn            ( Abc_Frame_t * pAbc, int argc, char ** argv );
@@ -129,8 +132,10 @@ void Abc_InitRewrite( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "ABC9",         "&lnetopt",      Abc_CommandAbc9LNetOpt,      0 );
     Cmd_CommandAdd( pAbc, "ABC9",         "&ttopt",        Abc_CommandAbc9Ttopt,        0 );
     Cmd_CommandAdd( pAbc, "ABC9",         "&transduction", Abc_CommandAbc9Transduction, 0 );
+    Cmd_CommandAdd( pAbc, "ABC9",         "&transtoch2"  , Abc_CommandAbc9TranStoch2,   0 );
     Cmd_CommandAdd( pAbc, "ABC9",         "&transtoch"   , Abc_CommandAbc9TranStoch,    0 );
     Cmd_CommandAdd( pAbc, "ABC9",         "&rrr",          Abc_CommandAbc9Rrr,          0 );
+    Cmd_CommandAdd( pAbc, "ABC9",         "&rrr2",          Abc_CommandAbc9Rrr2,          0 );
     Cmd_CommandAdd( pAbc, "ABC9",         "&rewire"      , Abc_CommandAbc9Rewire,       0 );
     Cmd_CommandAdd( pAbc, "ABC9",         "&deepsyn",      Abc_CommandAbc9DeepSyn,      0 );
     Cmd_CommandAdd( pAbc, "ABC9",         "&randsyn",      Abc_CommandAbc9RandSyn,      0 );
@@ -3584,6 +3589,240 @@ usage:
 
 /**Function*************************************************************
 
+  Synopsis    [Runs the single-threaded experimental transduction flow.]
+
+***********************************************************************/
+int Abc_CommandAbc9TranStoch2( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern Gia_Man_t * Gia_ManTranStoch2( Gia_Man_t * pGia, int nRestarts, int nHops, int nSeedBase, int fMspf, int fMerge, int fResetHop, int fZeroCostHop, int fRefactor, int fTruth, int fSingle, int fOriginalOnly, int fNewLine, Gia_Man_t * pExdc, int nVerbose, int nCandidates, int nMspfRestarts, int fHybrid, int fLocal, int nTime );
+    Gia_Man_t * pTemp, * pExdc = NULL;
+    char * pEnd;
+    long Value;
+    int c, nRestarts = 0, nHops = 10, nSeedBase = 0, fMspf = 1, fMerge = 1, fResetHop = 1, fZeroCostHop = 0, fRefactor = 0, fTruth = 2, fSingle = 0, fOriginalOnly = 0, fNewLine = 0, nVerbose = 1;
+    int nCandidates = 0, nMspfRestarts = 0, fHybrid = 0, fLocal = 0, nTime = 0;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "NMRVCBTmgrzftbsonqlh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'C':
+        case 'B':
+        case 'T':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-%c\" should be followed by a non-negative integer.\n", c );
+                goto usage;
+            }
+            Value = strtol( argv[globalUtilOptind], &pEnd, 10 );
+            if ( pEnd == argv[globalUtilOptind] || *pEnd || Value < 0 || Value > 1000000 )
+            {
+                Abc_Print( -1, "Expected an integer between 0 and 1000000.\n" );
+                goto usage;
+            }
+            if ( c == 'C' )
+                nCandidates = (int)Value;
+            else if ( c == 'B' )
+                nMspfRestarts = (int)Value;
+            else
+                nTime = (int)Value;
+            globalUtilOptind++;
+            break;
+        case 'l':
+            fLocal ^= 1;
+            break;
+        case 'q':
+            fHybrid ^= 1;
+            break;
+        case 'N':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-N\" should be followed by a non-negative integer.\n" );
+                goto usage;
+            }
+            Value = strtol( argv[globalUtilOptind], &pEnd, 10 );
+            if ( pEnd == argv[globalUtilOptind] || *pEnd || Value < 0 || Value > 1000000 )
+            {
+                Abc_Print( -1, "Expected an integer between 0 and 1000000.\n" );
+                goto usage;
+            }
+            nRestarts = (int)Value;
+            globalUtilOptind++;
+            break;
+        case 'M':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-M\" should be followed by a non-negative integer.\n" );
+                goto usage;
+            }
+            Value = strtol( argv[globalUtilOptind], &pEnd, 10 );
+            if ( pEnd == argv[globalUtilOptind] || *pEnd || Value < 0 || Value > 1000000 )
+            {
+                Abc_Print( -1, "Expected an integer between 0 and 1000000.\n" );
+                goto usage;
+            }
+            nHops = (int)Value;
+            globalUtilOptind++;
+            break;
+        case 'R':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-R\" should be followed by a non-negative integer.\n" );
+                goto usage;
+            }
+            Value = strtol( argv[globalUtilOptind], &pEnd, 10 );
+            if ( pEnd == argv[globalUtilOptind] || *pEnd || Value < 0 || Value > 1000000 )
+            {
+                Abc_Print( -1, "Expected an integer between 0 and 1000000.\n" );
+                goto usage;
+            }
+            nSeedBase = (int)Value;
+            globalUtilOptind++;
+            break;
+        case 'V':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-V\" should be followed by a non-negative integer.\n" );
+                goto usage;
+            }
+            Value = strtol( argv[globalUtilOptind], &pEnd, 10 );
+            if ( pEnd == argv[globalUtilOptind] || *pEnd || Value < 0 || Value > 1000000 )
+            {
+                Abc_Print( -1, "Expected an integer between 0 and 1000000.\n" );
+                goto usage;
+            }
+            nVerbose = (int)Value;
+            globalUtilOptind++;
+            break;
+        case 'm':
+            fMspf ^= 1;
+            break;
+        case 'g':
+            fMerge ^= 1;
+            break;
+        case 'r':
+            fResetHop ^= 1;
+            break;
+        case 'z':
+            fZeroCostHop ^= 1;
+            break;
+        case 'f':
+            fRefactor ^= 1;
+            break;
+        case 'b':
+            fTruth = 0;
+            break;
+        case 't':
+            fTruth = 1;
+            break;
+        case 's':
+            fSingle ^= 1;
+            break;
+        case 'o':
+            fOriginalOnly ^= 1;
+            break;
+        case 'n':
+            fNewLine ^= 1;
+            break;
+        case 'h':
+        default:
+            goto usage;
+        }
+    }
+    if ( nRestarts < 0 || nHops < 0 || nSeedBase < 0 || nVerbose < 0 )
+        goto usage;
+    if ( argc > globalUtilOptind + 1 )
+    {
+        Abc_Print( -1, "Wrong number of arguments.\n" );
+        goto usage;
+    }
+    if ( pAbc->pGia == NULL )
+    {
+        Abc_Print( -1, "Empty GIA network.\n" );
+        return 1;
+    }
+    if ( Gia_ManCiNum(pAbc->pGia) > 1023 )
+    {
+        Abc_Print( -1, "Transduction supports at most 1023 inputs.\n" );
+        return 1;
+    }
+    if ( Gia_ManRegNum(pAbc->pGia) )
+    {
+        Abc_Print( -1, "This command requires a combinational AIG.\n" );
+        return 1;
+    }
+    if ( fTruth == 1 && Gia_ManCiNum(pAbc->pGia) > 16 )
+    {
+        Abc_Print( -1, "Truth-table mode supports at most 16 inputs.\n" );
+        return 1;
+    }
+    if ( argc == globalUtilOptind + 1 )
+    {
+        FILE * pFile = fopen( argv[globalUtilOptind], "rb" );
+        if ( pFile == NULL )
+        {
+            Abc_Print( -1, "Cannot open input file \"%s\". ", argv[globalUtilOptind] );
+            return 1;
+        }
+        fclose( pFile );
+        pExdc = Gia_AigerRead( argv[globalUtilOptind], 0, 0, 0 );
+        if ( pExdc == NULL )
+        {
+            Abc_Print( -1, "Reading AIGER has failed.\n" );
+            return 1;
+        }
+    }
+
+    if ( pExdc && (Gia_ManRegNum(pExdc) || Gia_ManCiNum(pExdc) != Gia_ManCiNum(pAbc->pGia) ||
+        (Gia_ManCoNum(pExdc) != 1 && Gia_ManCoNum(pExdc) != Gia_ManCoNum(pAbc->pGia))) )
+    {
+        Abc_Print( -1, "EXDC must have matching inputs and either one or matching outputs.\n" );
+        Gia_ManStop( pExdc );
+        return 1;
+    }
+    pTemp = Gia_ManTranStoch2( pAbc->pGia, nRestarts, nHops, nSeedBase, fMspf, fMerge, fResetHop, fZeroCostHop, fRefactor, fTruth, fSingle, fOriginalOnly, fNewLine, pExdc, nVerbose, nCandidates, nMspfRestarts, fHybrid, fLocal, nTime );
+    if ( pExdc != NULL )
+        Gia_ManStop( pExdc );
+    if ( pTemp == NULL )
+        return 1;
+    Abc_FrameUpdateGia( pAbc, pTemp );
+    return 0;
+
+usage:
+    Abc_Print( -2, "usage: &transtoch2 [-NMRVCBT num] [-mgrzftbsonqlh] <file>\n" );
+    Abc_Print( -2, "\t           single-threaded transduction with randomized parameters\n" );
+    Abc_Print( -2, "\t-N num   : number of restarts [default = %d]\n", nRestarts );
+    Abc_Print( -2, "\t-M num   : number of hops (if; mfs2; strash) [default = %d]\n", nHops );
+    Abc_Print( -2, "\t-R num   : random seed [default = %d]\n", nSeedBase );
+    Abc_Print( -2, "\t-V num   : verbosity level [default = %d]\n", nVerbose);
+    Abc_Print( -2, "\t-T num   : soft time budget in seconds, 0 = unlimited [default = %d]\n", nTime );
+    Abc_Print( -2, "\t-C num   : costly internal-fanin trials per target, 0 = unlimited [default = %d]\n", nCandidates );
+    Abc_Print( -2, "\t-B num   : MSPF restarts per pass before CSPF closure, 0 = unlimited [default = %d]\n", nMspfRestarts );
+    Abc_Print( -2, "\t-l       : local fanin trials in all phases, with MSPF cleanup [default = %s]\n", fLocal ? "yes" : "no" );
+    Abc_Print( -2, "\t-q       : hybrid CSPF trials when MSPF is enabled [default = %s]\n", fHybrid ? "yes" : "no" );
+    Abc_Print( -2, "\t-m       : toggles using MSPF instead of CSPF [default = %s]\n", fMspf? "yes": "no" );
+    Abc_Print( -2, "\t-g       : toggles using ResubShared [default = %s]\n", fMerge? "yes": "no" );
+    Abc_Print( -2, "\t-r       : toggles resetting hop count when new minimum is found [default = %s]\n", fResetHop? "yes": "no" );
+    Abc_Print( -2, "\t-z       : toggles using \"drf -z\" instead of \"if;mfs2;st\" for hop [default = %s]\n", fZeroCostHop? "yes": "no" );
+    Abc_Print( -2, "\t-f       : toggles using \"drf -z\" instead of \"&dc2\" for ite [default = %s]\n", fRefactor? "yes": "no" );
+    Abc_Print( -2, "\t-t       : force truth tables (at most 16 inputs)\n" );
+    Abc_Print( -2, "\t-b       : force BDDs (default: truth tables up to 12 inputs, BDDs otherwise)\n" );
+    Abc_Print( -2, "\t-s       : toggles starting from the smallest starting point [default = %s]\n", fSingle? "yes": "no" );
+    Abc_Print( -2, "\t-o       : toggles starting from the given AIG [default = %s]\n", fOriginalOnly? "yes": "no" );
+    Abc_Print( -2, "\t-n       : toggles printing with a new line [default = %s]\n", fNewLine? "yes": "no" );
+    Abc_Print( -2, "\t-h       : prints the command usage\n" );
+    Abc_Print( -2, "\t           Search-policy and time-budget options also retain the smallest intermediate AIG.\n" );
+    Abc_Print( -2, "\t           Time budgets use wall time on Linux and CPU time elsewhere; load affects results.\n" );
+    Abc_Print( -2, "\t           Local trials use maximum care even during CSPF preparation.\n" );
+    Abc_Print( -2, "\t           Alternative starts need CUDD and at most 16 inputs.\n" );
+    Abc_Print( -2, "\t           Uses the platform C random generator; seeds may differ across platforms.\n" );
+    Abc_Print( -2, "\t<file>   : AIGER specifying external don't-cares\n" );
+    Abc_Print( -2, "\t\n" );
+    Abc_Print( -2, "\t           This command was contributed by Yukio Miyasaka.\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
   Synopsis    []
 
   Description []
@@ -3804,6 +4043,345 @@ usage:
       Abc_Print( -2, "\t-d     : ensure deterministic execution [default = %s]\n", fDeterministic? "yes": "no" );
       Abc_Print( -2, "\t-e     : apply \"c2rs; dc2\" after importing changes of partitions [default = %s]\n", fOptOnInsert? "yes": "no" );
       Abc_Print( -2, "\t-g     : discard changes that increased the cost [default = %s]\n", fGreedy? "yes": "no" );
+      Abc_Print( -2, "\t-h     : print the command usage\n");
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Runs experimental redundancy removal and resubstitution.]
+
+  Description [Retains the rrr options and SAT backend.]
+
+  SideEffects [Replaces the current GIA.]
+
+  SeeAlso     [Abc_CommandAbc9Rrr]
+
+***********************************************************************/
+int Abc_CommandAbc9Rrr2( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    Gia_Man_t *pNew, *pWork;
+    int fPreprocess = 1, fPolish = 1;
+    Gia_Rrr2Pars_t Options = { 1, 1, 2, 4, 32, 0, 0, 0 };
+    Gia_Rrr2Pars_t const ReferenceOptions = { 0, 0, 0, -1, 0, -1, 0, 0 };
+    int c, Value = 0;
+    long Parsed;
+    char * pEnd;
+    int iSeed = 0, nWords = 10, nTimeout = 0, nSchedulerVerbose = 0, nPartitionerVerbose = 0, nOptimizerVerbose = 0, nAnalyzerVerbose = 0, nSimulatorVerbose = 0, nSatSolverVerbose = 0, fUseBddCspf = 0, fUseBddMspf = 0, nConflictLimit = 1000, nSortType = -1, nOptimizerFlow = 5, nSchedulerFlow = 0, nPartitionType = 0, nDistance = 0, nJobs = 1, nThreads = 1, nPartitionSize = 0, nPartitionSizeMin = 0, fDeterministic = 1, nParallelPartitions = 1, fOptOnInsert = 0, fGreedy = 1;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "XYZNJKLBDRWTCGVPOAQSFHEMIUabcdefghpru" ) ) != EOF )
+    {
+        if ( strchr( "XYZNJKLBDRWTCGVPOAQSFHEMIU", c ) != NULL )
+        {
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Option -%c requires an integer.\n", c );
+                goto usage;
+            }
+            errno = 0;
+            Parsed = strtol( argv[globalUtilOptind], &pEnd, 10 );
+            if ( errno || pEnd == argv[globalUtilOptind] || *pEnd || Parsed < INT_MIN || Parsed > INT_MAX )
+            {
+                Abc_Print( -1, "Invalid integer for option -%c.\n", c );
+                goto usage;
+            }
+            Value = (int)Parsed;
+        }
+        switch ( c )
+        {
+        case 'r':
+            // Reset the policy before processing any following overrides.
+            Options = ReferenceOptions;
+            fPreprocess = fPolish = 0;
+            nOptimizerFlow = nConflictLimit = 0;
+            break;
+        case 'f': fPreprocess ^= 1; break;
+        case 'p': fPolish ^= 1; break;
+        case 'c': Options.fDirectCnf ^= 1; break;
+        case 'u': Options.fGeneralize ^= 1; break;
+        case 'F': Options.nCleanup = Value; globalUtilOptind++; break;
+        case 'H': Options.nNeutral = Value; globalUtilOptind++; break;
+        case 'E': Options.nCandidates = Value; globalUtilOptind++; break;
+        case 'M': Options.nDepthGrowth = Value; globalUtilOptind++; break;
+        case 'I': Options.nFirstConflicts = Value; globalUtilOptind++; break;
+        case 'U': Options.nWindow = Value; globalUtilOptind++; break;
+        case 'X':
+            nOptimizerFlow = Value;
+            globalUtilOptind++;
+            break;
+        case 'Y':
+            nSchedulerFlow = Value;
+            globalUtilOptind++;
+            break;
+        case 'Z':
+            nPartitionType = Value;
+            globalUtilOptind++;
+            break;
+        case 'N':
+            nJobs = Value;
+            globalUtilOptind++;
+            break;
+        case 'J':
+            nThreads = Value;
+            globalUtilOptind++;
+            break;
+        case 'K':
+            nPartitionSize = Value;
+            globalUtilOptind++;
+            break;
+        case 'L':
+            nPartitionSizeMin = Value;
+            globalUtilOptind++;
+            break;
+        case 'B':
+            nParallelPartitions = Value;
+            globalUtilOptind++;
+            break;
+        case 'D':
+            nDistance = Value;
+            globalUtilOptind++;
+            break;
+        case 'R':
+            iSeed = Value;
+            globalUtilOptind++;
+            break;
+        case 'W':
+            nWords = Value;
+            globalUtilOptind++;
+            break;
+        case 'T':
+            nTimeout = Value;
+            globalUtilOptind++;
+            break;
+        case 'C':
+            nConflictLimit = Value;
+            globalUtilOptind++;
+            break;
+        case 'G':
+            nSortType = Value;
+            globalUtilOptind++;
+            break;
+        case 'V':
+            nSchedulerVerbose = Value;
+            globalUtilOptind++;
+            break;
+        case 'P':
+            nPartitionerVerbose = Value;
+            globalUtilOptind++;
+            break;
+        case 'O':
+            nOptimizerVerbose = Value;
+            globalUtilOptind++;
+            break;
+        case 'A':
+            nAnalyzerVerbose = Value;
+            globalUtilOptind++;
+            break;
+        case 'Q':
+            nSimulatorVerbose = Value;
+            globalUtilOptind++;
+            break;
+        case 'S':
+            nSatSolverVerbose = Value;
+            globalUtilOptind++;
+            break;
+        case 'a':
+            fUseBddCspf ^= 1;
+            break;
+        case 'b':
+            fUseBddMspf ^= 1;
+            break;
+        case 'd':
+            fDeterministic ^= 1;
+            break;
+        case 'e':
+            fOptOnInsert ^= 1;
+            break;
+        case 'g':
+            fGreedy ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+
+    if ( argc > globalUtilOptind ) {
+        Abc_Print( -1, "Wrong number of arguments.\n" );
+        goto usage;
+    }
+
+    if ( pAbc->pGia == NULL )
+    {
+        Abc_Print( -1, "Empty GIA network.\n" );
+        return 1;
+    }
+
+    if ( nOptimizerFlow < 0 || nOptimizerFlow > 5 || nSchedulerFlow < 0 || nSchedulerFlow > 2 ||
+         nPartitionType < 0 || nPartitionType > 1 || nJobs < 1 || nThreads < 1 ||
+         nPartitionSize < 0 || nPartitionSizeMin < 0 || nParallelPartitions < 1 ||
+         (nPartitionSize && nPartitionSizeMin > nPartitionSize) || nDistance < 0 ||
+         nWords < 1 || nWords > INT_MAX / Abc_MaxInt(64, Gia_ManObjNum(pAbc->pGia)) ||
+         nTimeout < 0 || nConflictLimit < 0 || nSortType < -1 || nSortType > 17 ||
+         nSchedulerVerbose < 0 || nPartitionerVerbose < 0 || nOptimizerVerbose < 0 ||
+         nAnalyzerVerbose < 0 || nSimulatorVerbose < 0 || nSatSolverVerbose < 0 ||
+         Options.nCleanup < 0 || Options.nCleanup > 2 || Options.nNeutral < -1 ||
+         Options.nCandidates < 0 || Options.nDepthGrowth < -1 || Options.nDepthGrowth > 1000 ||
+         Options.nFirstConflicts < 0 || Options.nWindow < 0 ||
+         (fUseBddCspf && fUseBddMspf) )
+    {
+        Abc_Print( -1, "Invalid rrr2 parameter combination.\n" );
+        goto usage;
+    }
+#ifndef ABC_USE_PTHREADS
+    if ( nThreads > 1 )
+    {
+        Abc_Print( -1, "This build supports only one rrr2 worker.\n" );
+        return 1;
+    }
+#endif
+
+    if ( nSchedulerVerbose )
+    {
+        Abc_Print( 2, "Using the following parameters :\n" );
+        Abc_Print( 2, "\t-X %3d : method ", nOptimizerFlow );
+        switch( nOptimizerFlow )
+        {
+        case 0:
+            Abc_Print( 2, "(0 = single-add resub)" );
+            break;
+        case 1:
+            Abc_Print( 2, "(1 = multi-add resub)" );
+            break;
+        case 2:
+            Abc_Print( 2, "(2 = repeat single-add and multi-add resubs)" );
+            break;
+        case 3:
+            Abc_Print( 2, "(3 = random one meaningful resub)" );
+            break;
+        case 4:
+            Abc_Print( 2, "(4 = sampled multi-target resub)" );
+            break;
+        case 5:
+            Abc_Print( 2, "(5 = single-add local trials with global cleanup)" );
+            break;
+        }
+        Abc_Print( 2, "\n" );
+        Abc_Print( 2, "\t-Y %3d : flow ", nSchedulerFlow );
+        switch ( nSchedulerFlow )
+        {
+        case 0:
+            Abc_Print( 2, "(0 = apply method once)" );
+            break;
+        case 1:
+            Abc_Print( 2, "(1 = iterate like transtoch)" );
+            break;
+        case 2:
+            Abc_Print( 2, "(2 = iterate like deepsyn)" );
+            break;
+        }
+        Abc_Print( 2, "\n" );
+        Abc_Print( 2, "\t-N %3d : number of jobs to create by restarting or partitioning\n", nJobs );
+        Abc_Print( 2, "\t-J %3d : number of threads\n", nThreads );
+        Abc_Print( 2, "\t-K %3d : maximum partition size (0 = no partitioning)\n", nPartitionSize );
+        Abc_Print( 2, "\t-L %3d : minimum partition size\n", nPartitionSizeMin );
+        Abc_Print( 2, "\t-B %3d : maximum number of partitions to optimize in parallel\n", nParallelPartitions );
+        Abc_Print( 2, "\t-R %3d : random number generator seed\n", iSeed );
+        Abc_Print( 2, "\t-T %3d : timeout in seconds (0 = no timeout)\n", nTimeout );
+        Abc_Print( 2, "\t-C %3d : conflict limit (0 = no limit)\n", nConflictLimit );
+        Abc_Print( 2, "\t-F %3d : cleanup (0 = fixpoint, 1 = single sweep, 2 = selective)\n", Options.nCleanup );
+        Abc_Print( 2, "\t-H %3d : consecutive non-improving trials (-1 = unlimited)\n", Options.nNeutral );
+        Abc_Print( 2, "\t-E %3d : ranked candidates per target (0 = all)\n", Options.nCandidates );
+        Abc_Print( 2, "\t-M %3d : allowed level growth in percent (-1 = unlimited)\n", Options.nDepthGrowth );
+        Abc_Print( 2, "\t        direct CNF = %s, generalized witnesses = %s, dc3 before/after = %s/%s\n",
+            Options.fDirectCnf ? "yes" : "no", Options.fGeneralize ? "yes" : "no",
+            fPreprocess ? "yes" : "no", fPolish ? "yes" : "no" );
+        Abc_Print( 2, "Use command line switch \"-h\" to see more options\n\n" );
+    }
+
+    if ( fPreprocess && (Gia_ManXorNum(pAbc->pGia) || Gia_ManMuxNum(pAbc->pGia) || Gia_ManBufNum(pAbc->pGia)) )
+    {
+        Abc_Print( -1, "rrr2 preprocessing requires a plain AIG.\n" );
+        return 1;
+    }
+    pWork = fPreprocess ? Gia_ManDc3( pAbc->pGia, 1, 0 ) : pAbc->pGia;
+    if ( pWork == NULL ) return 1;
+    pNew = Gia_ManRrr2Ex( pWork, iSeed, nWords, nTimeout, nSchedulerVerbose, nPartitionerVerbose, nOptimizerVerbose, nAnalyzerVerbose, nSimulatorVerbose, nSatSolverVerbose, fUseBddCspf, fUseBddMspf, nConflictLimit, nSortType, nOptimizerFlow, nSchedulerFlow, nPartitionType, nDistance, nJobs, nThreads, nPartitionSize, nPartitionSizeMin, fDeterministic, nParallelPartitions, fOptOnInsert, fGreedy, &Options );
+
+    if ( fPreprocess ) Gia_ManStop( pWork );
+    if ( pNew == NULL )
+        return 1;
+    if ( fPolish )
+    {
+        pWork = Gia_ManDc3( pNew, 1, 0 );
+        if ( pWork != NULL )
+        {
+            if ( Gia_ManAndNum(pWork) <= Gia_ManAndNum(pNew) && Gia_ManLevelNum(pWork) <= Gia_ManLevelNum(pNew) )
+            {
+                Gia_ManStop( pNew );
+                pNew = pWork;
+            }
+            else
+                Gia_ManStop( pWork );
+        }
+    }
+    Abc_FrameUpdateGia( pAbc, pNew );
+
+    return 0;
+
+usage:
+      Abc_Print( -2, "usage: &rrr2 [-XYZNJKLBDRWTCGVPOAQSFHEMIU num] [-abcdefghpru]\n" );
+      Abc_Print( -2, "\t        experimental redundancy removal and resubstitution (bsat)\n" );
+      Abc_Print( -2, "\t-r     : reset to the previous policy defaults (place before overrides)\n" );
+      Abc_Print( -2, "\t-X num : method [default = %d]\n", nOptimizerFlow );
+      Abc_Print( -2, "\t                0: single-add resub\n" );
+      Abc_Print( -2, "\t                1: multi-add resub\n" );
+      Abc_Print( -2, "\t                2: repeat 0 and 1\n" );
+      Abc_Print( -2, "\t                3: random one meaningful resub\n" );
+      Abc_Print( -2, "\t                4: sampled multi-target resub\n" );
+      Abc_Print( -2, "\t                5: local single-add trials with global cleanup (changes search)\n" );
+      Abc_Print( -2, "\t-Y num : flow [default = %d]\n", nSchedulerFlow );
+      Abc_Print( -2, "\t                0: apply method once\n" );
+      Abc_Print( -2, "\t                1: iterate like transtoch\n" );
+      Abc_Print( -2, "\t                2: iterate like deepsyn\n" );
+      Abc_Print( -2, "\t-Z num : partition [default = %d]\n", nPartitionType );
+      Abc_Print( -2, "\t                0: distance base\n" );
+      Abc_Print( -2, "\t                1: level base\n" );
+      Abc_Print( -2, "\t-N num : number of jobs to create by restarting or partitioning [default = %d]\n", nJobs );
+      Abc_Print( -2, "\t-J num : number of threads [default = %d]\n", nThreads );
+      Abc_Print( -2, "\t-K num : maximum partition size (0 = no partitioning) [default = %d]\n", nPartitionSize );
+      Abc_Print( -2, "\t-L num : minimum partition size [default = %d]\n", nPartitionSizeMin );
+      Abc_Print( -2, "\t-B num : maximum number of partitions in parallel [default = %d]\n", nParallelPartitions );
+      Abc_Print( -2, "\t-D num : maximum distance between node and new fanin (0 = no limit) [default = %d]\n", nDistance );
+      Abc_Print( -2, "\t-R num : random number generator seed [default = %d]\n", iSeed );
+      Abc_Print( -2, "\t-W num : number of simulation words [default = %d]\n", nWords );
+      Abc_Print( -2, "\t-T num : timeout in seconds (0 = no timeout) [default = %d]\n", nTimeout );
+      Abc_Print( -2, "\t-C num : conflict limit (0 = no limit) [default = %d]\n", nConflictLimit );
+      Abc_Print( -2, "\t-G num : fanin cost function (-1 = random) [default = %d]\n", nSortType );
+      Abc_Print( -2, "\t-V num : scheduler verbosity (2 adds SAT encoding/solve times) [default = %d]\n", nSchedulerVerbose );
+      Abc_Print( -2, "\t-P num : partitioner verbosity level [default = %d]\n", nPartitionerVerbose );
+      Abc_Print( -2, "\t-O num : optimizer verbosity level [default = %d]\n", nOptimizerVerbose );
+      Abc_Print( -2, "\t-A num : analyzer verbosity level [default = %d]\n", nAnalyzerVerbose );
+      Abc_Print( -2, "\t-Q num : simulator verbosity level [default = %d]\n", nSimulatorVerbose );
+      Abc_Print( -2, "\t-S num : SAT solver verbosity level [default = %d]\n", nSatSolverVerbose );
+      Abc_Print( -2, "\t-a     : use BDD-based analyzer (CSPF) [default = %s]\n", fUseBddCspf? "yes": "no" );
+      Abc_Print( -2, "\t-b     : use BDD-based analyzer (MSPF) [default = %s]\n", fUseBddMspf? "yes": "no" );
+      Abc_Print( -2, "\t-d     : ensure deterministic execution [default = %s]\n", fDeterministic? "yes": "no" );
+      Abc_Print( -2, "\t-e     : apply \"c2rs; dc2\" after importing changes of partitions [default = %s]\n", fOptOnInsert? "yes": "no" );
+      Abc_Print( -2, "\t-g     : discard changes that increased the cost [default = %s]\n", fGreedy? "yes": "no" );
+      Abc_Print( -2, "\t-f     : toggle level-preserving dc3 preprocessing [default = %s]\n", fPreprocess ? "yes" : "no" );
+      Abc_Print( -2, "\t-p     : toggle dc3 polishing with nonincreasing area and levels [default = %s]\n", fPolish ? "yes" : "no" );
+      Abc_Print( -2, "\t-c     : toggle direct multi-input AND clauses [default = %s]\n", Options.fDirectCnf ? "yes" : "no" );
+      Abc_Print( -2, "\t-u     : toggle counterexample generalization with observability [default = %s]\n", Options.fGeneralize ? "yes" : "no" );
+      Abc_Print( -2, "\t-F num : cleanup: 0 = fixpoint, 1 = single sweep, 2 = selective [default = %d]\n", Options.nCleanup );
+      Abc_Print( -2, "\t-H num : consecutive non-improving trials per target (-1 = unlimited) [default = %d]\n", Options.nNeutral );
+      Abc_Print( -2, "\t-E num : ranked candidates per target (0 = all) [default = %d]\n", Options.nCandidates );
+      Abc_Print( -2, "\t-M num : allowed level growth in percent (-1 = unlimited) [default = %d]\n", Options.nDepthGrowth );
+      Abc_Print( -2, "\t         With partitioning (-K), search checks local levels; the final global\n" );
+      Abc_Print( -2, "\t         check discards the entire search result if it exceeds the bound.\n" );
+      Abc_Print( -2, "\t-I num : initial SAT conflicts before selective retries (0 = disabled) [default = %d]\n", Options.nFirstConflicts );
+      Abc_Print( -2, "\t-U num : initial SAT window depth (0 = full context) [default = %d]\n", Options.nWindow );
       Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
 }

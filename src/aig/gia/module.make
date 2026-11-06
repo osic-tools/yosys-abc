@@ -61,6 +61,7 @@ SRC +=    src/aig/gia/giaAig.c \
     src/aig/gia/giaMan.c \
     src/aig/gia/giaMem.c \
     src/aig/gia/giaMfs.c \
+    src/aig/gia/giaMfs3.c \
     src/aig/gia/giaMini.c \
     src/aig/gia/giaMinLut.c \
     src/aig/gia/giaMinLut2.c \
@@ -87,6 +88,7 @@ SRC +=    src/aig/gia/giaAig.c \
     src/aig/gia/giaRsb.c \
     src/aig/gia/giaRex.c \
     src/aig/gia/giaRrr.cpp \
+    src/aig/gia/giaRrr2.cpp \
     src/aig/gia/giaSatEdge.c \
     src/aig/gia/giaSatLE.c \
     src/aig/gia/giaSatLut.c \
@@ -120,10 +122,13 @@ SRC +=    src/aig/gia/giaAig.c \
     src/aig/gia/giaTis.c \
     src/aig/gia/giaTransduction.cpp \
     src/aig/gia/giaTranStoch.c \
+    src/aig/gia/giaTransduction2.cpp \
+    src/aig/gia/giaTranStoch2.c \
     src/aig/gia/giaTruth.c \
     src/aig/gia/giaTsim.c \
     src/aig/gia/giaTtopt.cpp \
     src/aig/gia/giaUnate.c \
     src/aig/gia/giaUtil.c \
     src/aig/gia/giaBound.c \
-    src/aig/gia/giaDecGraph.cpp
+    src/aig/gia/giaDecGraph.cpp \
+    src/aig/gia/giaDecGraph2.cpp

@@ -2250,6 +2250,10 @@ SOURCE=.\src\sat\bmc\bmcCas.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\sat\bmc\bmcCasDec2.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\sat\bmc\bmcCexCare.c
 # End Source File
 # Begin Source File
@@ -2319,6 +2323,10 @@ SOURCE=.\src\sat\bmc\bmcMaj.c
 # Begin Source File
 
 SOURCE=.\src\sat\bmc\bmcMaj2.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\sat\bmc\bmcTwo.c
 # End Source File
 # Begin Source File
 
@@ -6621,6 +6629,10 @@ SOURCE=.\src\aig\gia\giaMfs.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaMfs3.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaMini.c
 # End Source File
 # Begin Source File
@@ -6646,6 +6658,10 @@ SOURCE=.\src\aig\gia\giaNewBdd.h
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaNewTt.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaNewTt2.h
 # End Source File
 # Begin Source File
 
@@ -6710,6 +6726,74 @@ SOURCE=.\src\aig\gia\giaRex.c
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaRrr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaRrr2.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Abc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Analyzer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2AndNetwork.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2BddAnalyzer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2BddManager.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2BddMspfAnalyzer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2LevelBasePartitioner.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Optimizer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Parameter.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Partitioner.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2SatSolver.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Scheduler.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Simulator.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Types.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\opt\rrr2\rrr2Utils.h
 # End Source File
 # Begin Source File
 
@@ -6861,6 +6945,18 @@ SOURCE=.\src\aig\gia\giaTranStoch.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaTransduction2.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaTransduction2.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaTranStoch2.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaUnate.c
 # End Source File
 # Begin Source File
@@ -6870,6 +6966,10 @@ SOURCE=.\src\aig\gia\giaUtil.c
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaDecGraph.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaDecGraph2.cpp
 # End Source File
 # Begin Source File
 

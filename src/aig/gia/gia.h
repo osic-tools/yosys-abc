@@ -1557,6 +1557,8 @@ extern Gia_Man_t *         If2_ManPerformMapping( Gia_Man_t * pGia, If2_Par_t * 
 //=== giaIf3.c ============================================================
 extern void                If3_ManSetDefaultPars( If3_Par_t * pPars );
 extern Gia_Man_t *         If3_ManPerformMapping( Gia_Man_t * pGia, If3_Par_t * pPars );
+//=== giaDc3.c ============================================================
+extern Gia_Man_t *         Gia_ManDc3( Gia_Man_t * pGia, int fKeepLevel, int fVerbose );
 //=== giaDch2.c ===========================================================
 extern Gia_Man_t *         Gia_ManDch2Construct( Gia_Man_t * pGia, int fKeepLevel, int fVerbose );
 extern Gia_Man_t *         Gia_ManDch2DeriveChoices( Gia_Man_t * pGia );
@@ -1899,6 +1901,21 @@ extern Gia_Man_t *         Gia_ManTransductionTt( Gia_Man_t * pGia, int nType, i
 
 /*=== giaRrr.cpp ===========================================================*/
 extern Gia_Man_t *         Gia_ManRrr( Gia_Man_t *pGia, int iSeed, int nWords, int nTimeout, int nSchedulerVerbose, int nPartitionerVerbose, int nOptimizerVerbose, int nAnalyzerVerbose, int nSimulatorVerbose, int nSatSolverVerbose, int fUseBddCspf, int fUseBddMspf, int nConflictLimit, int nSortType, int nOptimizerFlow, int nSchedulerFlow, int nPartitionType, int nDistance, int nJobs, int nThreads, int nPartitionSize, int nPartitionSizeMin, int fDeterministic, int nParallelPartitions, int fOptOnInsert, int fGreedy );
+// Optional policies for experimental redundancy analysis.
+typedef struct Gia_Rrr2Pars_t_ Gia_Rrr2Pars_t;
+struct Gia_Rrr2Pars_t_
+{
+    int fDirectCnf;
+    int fGeneralize;
+    int nCleanup;
+    int nNeutral;
+    int nCandidates;
+    int nDepthGrowth;
+    int nFirstConflicts;
+    int nWindow;
+};
+extern Gia_Man_t *         Gia_ManRrr2( Gia_Man_t *pGia, int iSeed, int nWords, int nTimeout, int nSchedulerVerbose, int nPartitionerVerbose, int nOptimizerVerbose, int nAnalyzerVerbose, int nSimulatorVerbose, int nSatSolverVerbose, int fUseBddCspf, int fUseBddMspf, int nConflictLimit, int nSortType, int nOptimizerFlow, int nSchedulerFlow, int nPartitionType, int nDistance, int nJobs, int nThreads, int nPartitionSize, int nPartitionSizeMin, int fDeterministic, int nParallelPartitions, int fOptOnInsert, int fGreedy );
+extern Gia_Man_t *         Gia_ManRrr2Ex( Gia_Man_t *pGia, int iSeed, int nWords, int nTimeout, int nSchedulerVerbose, int nPartitionerVerbose, int nOptimizerVerbose, int nAnalyzerVerbose, int nSimulatorVerbose, int nSatSolverVerbose, int fUseBddCspf, int fUseBddMspf, int nConflictLimit, int nSortType, int nOptimizerFlow, int nSchedulerFlow, int nPartitionType, int nDistance, int nJobs, int nThreads, int nPartitionSize, int nPartitionSizeMin, int fDeterministic, int nParallelPartitions, int fOptOnInsert, int fGreedy, Gia_Rrr2Pars_t const * pOptions );
 
 /*=== giaCTas.c ===========================================================*/
 typedef struct Tas_Man_t_  Tas_Man_t;
@@ -1915,6 +1932,9 @@ extern Vec_Int_t *         Tas_ManSolveRoots( Tas_Man_t * p, Vec_Int_t * vRootLi
 /*=== giaDecGraph.c ===========================================================*/
 extern Gia_Man_t*          Gia_ManDecGraph( Gia_Man_t* p );
 extern Gia_Man_t*          Gia_ManDecGraphFromFile( char* pFileName );
+/*=== giaDecGraph2.cpp ========================================================*/
+extern Gia_Man_t*          Gia_ManDecGraph2( Gia_Man_t* p, int fQuality, int fVerbose );
+extern Gia_Man_t*          Gia_ManDecGraph2FromFile( char* pFileName, int fQuality, int fVerbose );
 
 /*=== giaBound.c ===========================================================*/
 typedef struct Bnd_Man_t_  Bnd_Man_t;
